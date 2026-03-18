@@ -15,6 +15,12 @@ on:
       gpu_arch:
         description: "Target GPU architectures (semicolon-separated)"
         default: "gfx1201"
+      vllm_version:
+        description: "vLLM version to install"
+        default: "0.17.1"
+      rocm_wheel_tag:
+        description: "ROCm wheel variant tag (e.g., rocm700)"
+        default: "rocm700"
 
 env:
   REGISTRY: docker.io
@@ -76,7 +82,7 @@ jobs:
       - name: Verify tritonserver image exists
         run: docker images tritonserver
 
-      # Step 2: Extend with vLLM + backend
+      # Step 2: Extend with vLLM ROCm + backend
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -98,3 +104,5 @@ jobs:
           build-args: |
             BASE_IMAGE=tritonserver:latest
             PYTORCH_ROCM_ARCH=${{ inputs.gpu_arch || 'gfx1201' }}
+            VLLM_VERSION=${{ inputs.vllm_version || '0.17.1' }}
+            ROCM_WHEEL_TAG=${{ inputs.rocm_wheel_tag || 'rocm700' }}

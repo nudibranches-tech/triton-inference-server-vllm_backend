@@ -8,6 +8,8 @@
 # Build args:
 #   BASE_IMAGE         - tritonserver image from step 1
 #   PYTORCH_ROCM_ARCH  - Target GPU architectures
+#   VLLM_VERSION       - vLLM version (e.g., 0.17.1)
+#   ROCM_WHEEL_TAG     - ROCm wheel variant tag (e.g., rocm700)
 
 ARG BASE_IMAGE=tritonserver:latest
 FROM ${BASE_IMAGE}
@@ -15,9 +17,26 @@ FROM ${BASE_IMAGE}
 ARG PYTORCH_ROCM_ARCH="gfx1201"
 ENV PYTORCH_ROCM_ARCH=${PYTORCH_ROCM_ARCH}
 
-# Install vLLM + dependencies
-RUN pip install --no-cache-dir \
-    vllm \
+ARG VLLM_VERSION="0.17.1"
+ARG ROCM_WHEEL_TAG="rocm700"
+
+# Install runtime dependencies required by PyTorch ROCm wheels
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libopenmpi-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install uv (pip 24.0 from Debian can't handle +rocm local version wheels)
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR="/usr/local/bin" sh
+
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+ENV UV_BREAK_SYSTEM_PACKAGES=true
+
+# Install vLLM ROCm build from official AMD/vLLM wheel index
+# Pre-built wheels include torch, triton, flash-attn compiled for ROCm
+RUN uv pip install --system --no-cache \
+    "vllm==${VLLM_VERSION}+${ROCM_WHEEL_TAG}" \
+    --extra-index-url "https://wheels.vllm.ai/rocm/${VLLM_VERSION}/${ROCM_WHEEL_TAG}" && \
+    uv pip install --system --no-cache \
     huggingface-hub[cli] \
     pillow \
     numpy
