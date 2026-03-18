@@ -6,7 +6,8 @@ image := "nudibranches/tritonserver-rocm-vllm"
 gpu_arch := "gfx1201"
 triton_version := "2.64.0"
 rocm_version := "7.2"
-version := triton_version + "-rocm" + rocm_version + "-" + gpu_arch
+date := `date +%Y%m%d%H%M`
+version := triton_version + "-rocm" + rocm_version + "-" + gpu_arch + "-" + date
 
 # Build everything and push to Docker Hub
 build-all: build-base build-triton build-image push
